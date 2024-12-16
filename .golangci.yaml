@@ -1,0 +1,22 @@
+linters:
+  disable:
+    - wrapcheck
+    - err113
+    - contextcheck
+    - exhaustive
+    - protogetter
+  presets:
+    - bugs
+    - error
+    - unused
+
+run:
+  tests: false
+
+issues:
+  exclude-dirs:
+    - .github
+    - examples
+    - dist
+    - bin
+    - api
