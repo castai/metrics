@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package metrics.v1beta;
+
+option go_package = "github.com/castai/metrics/v1beta;metrics";
+
+// IngestionAPI is the gRPC service for ingesting metrics data
+service IngestionAPI {
+  // WriteMetrics writes metrics data to the metrics ingestor
+  rpc WriteMetrics(stream WriteMetricsRequest) returns (WriteMetricsResponse) {}
+}
+
+// WriteMetricsRequest is the request message for WriteMetrics
+// The request is a stream of WriteMetricsRequest messages, where each message contains a batch of metrics data
+message WriteMetricsRequest {
+  // collection is the name of the collection where the metrics data should be written
+  // usually this corresponds to the table name in the database
+  string collection = 1;
+  // metrics is the Avro encoded data
+  bytes metrics = 2;
+  // schema is the byte representation of the Avro schema
+  bytes schema = 3;
+  // metadata contains additional metadata about the metrics data
+  // e.g. number of rows, whether to include server side timestamp
+  MetricsMetadata metadata = 4;
+}
+
+// MetricsMetadata contains additional metadata about the metrics data
+// e.g. number of rows, whether to include server side timestamp
+message MetricsMetadata {
+  // number of rows in the metrics data
+  uint64 rows = 1;
+  // whether to include server side timestamp when writing metrics
+  // ignored for METRICS and AGENT_TELEMETRY schema types, timestamp is always included for those
+  // by default timestamp will always be included, unless explicitly specified not to
+  bool skip_timestamp = 2;
+  // if skip_timestamp = false and no column name is provided, `timestamp` is assumed as column name
+  optional string timestamp_column = 3;
+}
+
+// WriteMetricsResponse is the response message for WriteMetrics
+message WriteMetricsResponse {
+  // success indicates whether the write operation was successful
+  bool success = 1;
+  // error contains the error message if the write operation failed
+  optional string error = 2;
+}

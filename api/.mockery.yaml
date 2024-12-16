@@ -1,0 +1,13 @@
+issue-845-fix: True
+with-expecter: True
+dir: v1beta/mocks/{{replace .InterfaceDirRelative "v1beta/mocks/" "" 1}}
+disable-version-string: true
+filename: "mock_{{.InterfaceName|lower}}.go"
+packages:
+  github.com/castai/metrics/api/v1beta:
+    config:
+      recursive: true
+      include-regex: ".*Client"
+  google.golang.org/grpc:
+    interfaces:
+      ClientStreamingClient:
