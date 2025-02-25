@@ -528,6 +528,27 @@ func TestMetricClientWithServer(t *testing.T) {
 				WithMaxChunkSize[containerMetrics](1),
 			},
 		},
+		{
+			name:    "skip timestamp",
+			metrics: datapoints,
+			serverHandler: func(stream pb.IngestionAPI_WriteMetricsServer) error {
+				for {
+					req, err := stream.Recv()
+					if err != nil {
+						if errors.Is(err, io.EOF) {
+							_ = stream.SendAndClose(&pb.WriteMetricsResponse{Success: true})
+							return nil
+						}
+						return err
+					}
+
+					require.True(t, req.Metadata.SkipTimestamp)
+				}
+			},
+			metricOptions: []MetricOption[containerMetrics]{
+				WithSkipTimestamp[containerMetrics](),
+			},
+		},
 	}
 
 	for _, tc := range testCases {
