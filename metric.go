@@ -44,6 +44,14 @@ func WithMaxChunkSize[T any](size int) MetricOption[T] {
 	}
 }
 
+func WithSkipTimestamp[T any]() MetricOption[T] {
+	return func(m *metric[T]) error {
+		m.skipTimestamp = true
+
+		return nil
+	}
+}
+
 type metric[T any] struct {
 	collection    string
 	schema        avro.Schema
@@ -54,12 +62,14 @@ type metric[T any] struct {
 	pendingRows   uint64
 	writeRequests []*pb.WriteMetricsRequest
 	mu            sync.Mutex
+	skipTimestamp bool
 }
 
 func NewMetric[T any](client MetricClient, opts ...MetricOption[T]) (Metric[T], error) {
 	m := &metric[T]{
-		buf:          &bytes.Buffer{},
-		maxChunkSize: defaultMaxChunkSize,
+		buf:           &bytes.Buffer{},
+		maxChunkSize:  defaultMaxChunkSize,
+		skipTimestamp: false,
 	}
 
 	for _, opt := range opts {
@@ -110,7 +120,8 @@ func (m *metric[T]) Write(datapoints ...T) error {
 					Schema:     m.schemaBytes,
 					Metrics:    m.buf.Bytes(),
 					Metadata: &pb.MetricsMetadata{
-						Rows: m.pendingRows,
+						Rows:          m.pendingRows,
+						SkipTimestamp: m.skipTimestamp,
 					},
 				})
 
@@ -133,7 +144,8 @@ func (m *metric[T]) requests() []*pb.WriteMetricsRequest {
 			Schema:     m.schemaBytes,
 			Metrics:    m.buf.Bytes(),
 			Metadata: &pb.MetricsMetadata{
-				Rows: m.pendingRows,
+				Rows:          m.pendingRows,
+				SkipTimestamp: m.skipTimestamp,
 			},
 		})
 
