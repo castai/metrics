@@ -344,7 +344,7 @@ func TestMetricClient(t *testing.T) {
 		require.Equal(t, uint64(5), totalRows)
 	})
 
-	t.Run("metric schema required", func(t *testing.T) {
+	t.Run("metric schema is inferred", func(t *testing.T) {
 		mockAPIClient := pb_mock.NewMockIngestionAPIClient(t)
 
 		client := &metricClient{
@@ -358,9 +358,12 @@ func TestMetricClient(t *testing.T) {
 			Value int `avro:"value"`
 		}
 
-		_, err := NewMetric[testMetrics](client)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "schema is required")
+		m, err := NewMetric[testMetrics](client, WithCollectionName[testMetrics]("test_metrics"))
+		require.NoError(t, err)
+		require.NotNil(t, m)
+
+		err = m.Write(testMetrics{Value: 42})
+		require.NoError(t, err)
 	})
 }
 

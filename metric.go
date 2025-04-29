@@ -52,6 +52,14 @@ func WithSkipTimestamp[T any]() MetricOption[T] {
 	}
 }
 
+func WithCollectionName[T any](name string) MetricOption[T] {
+	return func(m *metric[T]) error {
+		m.collection = name
+
+		return nil
+	}
+}
+
 type metric[T any] struct {
 	collection    string
 	schema        avro.Schema
@@ -79,7 +87,15 @@ func NewMetric[T any](client MetricClient, opts ...MetricOption[T]) (Metric[T], 
 	}
 
 	if m.schema == nil {
-		return nil, errors.New("schema is required")
+		if m.collection == "" {
+			return nil, errors.New("collection name is required if schema is not provided")
+		}
+		var t T
+		schema, err := structToSchema(m.collection, t)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create schema: %w", err)
+		}
+		m.schema = schema
 	}
 
 	m.schemaBytes = []byte(m.schema.String())
@@ -89,7 +105,9 @@ func NewMetric[T any](client MetricClient, opts ...MetricOption[T]) (Metric[T], 
 		return nil, errors.New("schema must be a record")
 	}
 
-	m.collection = schema.Name()
+	if m.collection == "" {
+		m.collection = schema.Name()
+	}
 
 	m.encoder = avro.NewEncoderForSchema(m.schema, m.buf)
 
