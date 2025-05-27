@@ -19,6 +19,5 @@ type MetricOption[T any] func(*metric[T]) error
 
 type MetricClient interface {
 	Start(ctx context.Context) error
-	Close()
 	add(metric collectable)
 }

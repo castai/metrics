@@ -49,7 +49,6 @@ type metricClient struct {
 	drainTimeout    time.Duration
 	logger          *logging.Logger
 	mu              sync.RWMutex
-	stopCh          chan struct{}
 }
 
 // NewMetricClient creates a new MetricClient instance which is responsible for sending
@@ -85,7 +84,6 @@ func NewMetricClient(
 		flushInterval:   defaultFlushInterval,
 		maxRetryTimeout: defaultMaxRetry,
 		drainTimeout:    defaultDrainTimeout,
-		stopCh:          make(chan struct{}),
 	}
 
 	for _, opt := range options {
@@ -119,21 +117,11 @@ func (c *metricClient) send(request *pb.WriteMetricsRequest, client pb.Ingestion
 func (c *metricClient) Start(ctx context.Context) error {
 	ticker := time.NewTicker(c.flushInterval)
 	defer ticker.Stop()
+	defer c.cleanup()
 
 	for {
 		select {
-		case <-c.stopCh:
-			c.drain()
-
-			if c.connection == nil {
-				return nil
-			}
-
-			return c.connection.Close()
 		case <-ctx.Done():
-			c.drain()
-			c.Close()
-
 			return ctx.Err()
 		case <-ticker.C:
 			if err := c.collect(ctx); err != nil {
@@ -143,8 +131,13 @@ func (c *metricClient) Start(ctx context.Context) error {
 	}
 }
 
-func (c *metricClient) Close() {
-	close(c.stopCh)
+func (c *metricClient) cleanup() {
+	c.drain()
+	if c.connection != nil {
+		if err := c.connection.Close(); err != nil {
+			c.logger.Errorf("failed to close connection: %v", err)
+		}
+	}
 }
 
 // collect retrieves all buffered metrics from the registered Metric instances,

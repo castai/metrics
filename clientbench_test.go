@@ -75,7 +75,6 @@ func BenchmarkClient(b *testing.B) {
 		err := client.Start(ctx)
 		require.NoError(b, err)
 	}()
-	defer client.Close()
 
 	type containerMetrics struct {
 		ContainerID   string `avro:"container_id"`

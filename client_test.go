@@ -66,7 +66,6 @@ func TestMetricClient(t *testing.T) {
 			client:        mockAPIClient,
 			flushInterval: 50 * time.Millisecond,
 			logger:        logger,
-			stopCh:        make(chan struct{}),
 		}
 
 		ctx, cancel := context.WithCancel(context.Background())
@@ -97,7 +96,6 @@ func TestMetricClient(t *testing.T) {
 			client:        mockAPIClient,
 			flushInterval: 50 * time.Millisecond,
 			logger:        logger,
-			stopCh:        make(chan struct{}),
 		}
 
 		schemaJSON := `{
@@ -168,7 +166,6 @@ func TestMetricClient(t *testing.T) {
 			client:        mockAPIClient,
 			logger:        logger,
 			flushInterval: 50 * time.Millisecond,
-			stopCh:        make(chan struct{}),
 		}
 
 		schemaJSON := `{
@@ -223,7 +220,6 @@ func TestMetricClient(t *testing.T) {
 			client:        mockAPIClient,
 			logger:        logger,
 			flushInterval: 10 * time.Millisecond,
-			stopCh:        make(chan struct{}),
 		}
 
 		schemaJSON := `{
@@ -281,7 +277,6 @@ func TestMetricClient(t *testing.T) {
 			client:        mockAPIClient,
 			logger:        logger,
 			flushInterval: 10 * time.Millisecond,
-			stopCh:        make(chan struct{}),
 		}
 
 		schemaJSON := `{
@@ -351,7 +346,6 @@ func TestMetricClient(t *testing.T) {
 			client:        mockAPIClient,
 			logger:        logger,
 			flushInterval: 10 * time.Millisecond,
-			stopCh:        make(chan struct{}),
 		}
 
 		type testMetrics struct {
@@ -407,9 +401,8 @@ func TestMetricClientWithServer(t *testing.T) {
 
 	go func() {
 		err := client.Start(ctx)
-		require.NoError(t, err)
+		require.ErrorIs(t, err, context.Canceled)
 	}()
-	defer client.Close()
 
 	type containerMetrics struct {
 		ContainerID   string `avro:"container_id"`
