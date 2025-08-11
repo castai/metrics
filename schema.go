@@ -3,9 +3,10 @@ package metrics
 import (
 	"errors"
 	"fmt"
-	"github.com/hamba/avro/v2"
 	"reflect"
 	"strings"
+
+	"github.com/hamba/avro/v2"
 )
 
 // PrimitiveType returns the Avro type for a given Go kind.
@@ -37,12 +38,13 @@ func fieldToSchema(f reflect.StructField) (avro.Schema, error) {
 	case reflect.String:
 		return avro.NewPrimitiveSchema(avro.String, nil), nil
 	case reflect.Uint, reflect.Uint64, reflect.Uintptr:
-		// Fixed schema with a size of 8 bytes for uint64 and uintptr
-		fs, err := avro.NewFixedSchema(strings.ToLower(f.Name), "", 8, nil)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create fixed schema: %w", err)
-		}
-		return fs, nil
+		//// Fixed schema with a size of 8 bytes for uint64 and uintptr
+		//fs, err := avro.NewFixedSchema(strings.ToLower(f.Name), "", 8, nil)
+		//if err != nil {
+		//	return nil, fmt.Errorf("failed to create fixed schema: %w", err)
+		//}
+		//return fs, nil
+		return avro.NewPrimitiveSchema(avro.Long, nil), nil
 	case reflect.Int32, reflect.Int16, reflect.Int8,
 		reflect.Uint16, reflect.Uint8:
 		return avro.NewPrimitiveSchema(avro.Int, nil), nil
