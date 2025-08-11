@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/hamba/avro/v2"
 	"sync"
+
+	"github.com/hamba/avro/v2"
 
 	pb "github.com/castai/metrics/api/v1beta"
 )
@@ -14,6 +15,20 @@ const (
 	defaultMaxChunkSize = 1024 * 1024      // 1MB
 	MaxAllowedChunkSize = 20 * 1024 * 1024 // 20MB
 )
+
+func init() {
+	avro.RegisterTypeConverters(avro.TypeConversionFuncs{
+		AvroType: avro.Long,
+		EncoderTypeConversion: func(in any, schema avro.Schema) (any, error) {
+			val, ok := in.(uint64)
+			if ok {
+				return val, nil
+			}
+
+			return nil, fmt.Errorf("invalid type %T", in)
+		},
+	})
+}
 
 func WithAvroSchema[T any](schema avro.Schema) MetricOption[T] {
 	return func(m *metric[T]) error {
