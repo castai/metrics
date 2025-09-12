@@ -3,9 +3,10 @@ package metrics
 import (
 	"errors"
 	"fmt"
-	"github.com/hamba/avro/v2"
 	"reflect"
 	"strings"
+
+	"github.com/hamba/avro/v2"
 )
 
 // PrimitiveType returns the Avro type for a given Go kind.
@@ -33,7 +34,34 @@ func primitiveType(t reflect.Kind) avro.Type {
 
 // FieldToSchema converts a struct field to an Avro schema.
 func fieldToSchema(f reflect.StructField) (avro.Schema, error) {
-	switch f.Type.Kind() {
+	fieldType := f.Type
+
+	// Handle pointer types by creating a union with null
+	if fieldType.Kind() == reflect.Ptr {
+		elemType := fieldType.Elem()
+
+		// Create a struct field for the underlying type
+		tempField := reflect.StructField{
+			Name: f.Name,
+			Type: elemType,
+			Tag:  f.Tag,
+		}
+
+		elemSchema, err := fieldToSchema(tempField)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create schema for pointer element type: %w", err)
+		}
+
+		// Create a union schema with null and the element type
+		nullSchema := avro.NewPrimitiveSchema(avro.Null, nil)
+		unionSchema, err := avro.NewUnionSchema([]avro.Schema{nullSchema, elemSchema})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create union schema: %w", err)
+		}
+		return unionSchema, nil
+	}
+
+	switch fieldType.Kind() {
 	case reflect.String:
 		return avro.NewPrimitiveSchema(avro.String, nil), nil
 	case reflect.Uint, reflect.Uint64, reflect.Uintptr:
@@ -55,43 +83,43 @@ func fieldToSchema(f reflect.StructField) (avro.Schema, error) {
 	case reflect.Bool:
 		return avro.NewPrimitiveSchema(avro.Boolean, nil), nil
 	case reflect.Array, reflect.Slice:
-		if f.Type.Elem().Kind() == reflect.Uint8 {
+		if fieldType.Elem().Kind() == reflect.Uint8 {
 			return avro.NewPrimitiveSchema(avro.Bytes, nil), nil
 		}
 
-		if f.Type.Elem().Kind() == reflect.Struct {
-			fs, err := structToSchema(strings.ToLower(f.Name), f.Type.Elem())
+		if fieldType.Elem().Kind() == reflect.Struct {
+			fs, err := structToSchema(strings.ToLower(f.Name), fieldType.Elem())
 			if err != nil {
 				return nil, fmt.Errorf("failed to create struct schema: %w", err)
 			}
 			return avro.NewArraySchema(fs), nil
 		}
-		pType := primitiveType(f.Type.Elem().Kind())
+		pType := primitiveType(fieldType.Elem().Kind())
 
 		if pType != "" {
 			return avro.NewArraySchema(avro.NewPrimitiveSchema(pType, nil)), nil
 		}
 	case reflect.Map:
-		if f.Type.Key() != reflect.TypeOf("") {
-			return nil, fmt.Errorf("unsupported map key type %v", f.Type.Key())
+		if fieldType.Key() != reflect.TypeOf("") {
+			return nil, fmt.Errorf("unsupported map key type %v", fieldType.Key())
 		}
 
-		return avro.NewMapSchema(avro.NewPrimitiveSchema(primitiveType(f.Type.Elem().Kind()), nil)), nil
+		return avro.NewMapSchema(avro.NewPrimitiveSchema(primitiveType(fieldType.Elem().Kind()), nil)), nil
 	case reflect.Struct:
-		if f.Type.String() == "time.Time" {
+		if fieldType.String() == "time.Time" {
 			return avro.NewPrimitiveSchema(avro.Long, avro.NewPrimitiveLogicalSchema(avro.TimestampMillis)), nil
 		}
 
-		fs, err := structToSchema(strings.ToLower(f.Name), f.Type)
+		fs, err := structToSchema(strings.ToLower(f.Name), fieldType)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create struct schema: %w", err)
 		}
 		return fs, nil
 	default:
-		return nil, fmt.Errorf("unsupported kind %v", f.Type.Kind())
+		return nil, fmt.Errorf("unsupported kind %v", fieldType.Kind())
 	}
 
-	return nil, fmt.Errorf("unsupported kind %v", f.Type.Kind())
+	return nil, fmt.Errorf("unsupported kind %v", fieldType.Kind())
 }
 
 func structToSchema(schemaName string, s any) (avro.Schema, error) {
