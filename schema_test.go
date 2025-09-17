@@ -2,12 +2,13 @@ package metrics
 
 import (
 	"bytes"
-	"github.com/hamba/avro/v2"
-	"github.com/stretchr/testify/require"
 	"math"
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/hamba/avro/v2"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPrimitiveType(t *testing.T) {
@@ -46,26 +47,28 @@ func TestPrimitiveType(t *testing.T) {
 
 func TestFieldToSchema(t *testing.T) {
 	type testStruct struct {
-		StringField  string            `avro:"string_field"`
-		IntField     int               `avro:"int_field"`
-		Int8Field    int8              `avro:"int8_field"`
-		Int16Field   int16             `avro:"int16_field"`
-		Int32Field   int32             `avro:"int32_field"`
-		Int64Field   int64             `avro:"int64_field"`
-		UintField    uint              `avro:"uint_field"`
-		Uint8Field   uint8             `avro:"uint8_field"`
-		Uint16Field  uint16            `avro:"uint16_field"`
-		Uint32Field  uint32            `avro:"uint32_field"`
-		Uint64Field  uint64            `avro:"uint64_field"`
-		Float32Field float32           `avro:"float32_field"`
-		Float64Field float64           `avro:"float64_field"`
-		BoolField    bool              `avro:"bool_field"`
-		BytesField   []byte            `avro:"bytes_field"`
-		TimeField    time.Time         `avro:"time_field"`
-		StringSlice  []string          `avro:"string_slice"`
-		IntSlice     []int             `avro:"int_slice"`
-		StringMap    map[string]string `avro:"string_map"`
-		IntMap       map[string]int    `avro:"int_map"`
+		StringField   string            `avro:"string_field"`
+		IntField      int               `avro:"int_field"`
+		Int8Field     int8              `avro:"int8_field"`
+		Int16Field    int16             `avro:"int16_field"`
+		Int32Field    int32             `avro:"int32_field"`
+		Int64Field    int64             `avro:"int64_field"`
+		UintField     uint              `avro:"uint_field"`
+		Uint8Field    uint8             `avro:"uint8_field"`
+		Uint16Field   uint16            `avro:"uint16_field"`
+		Uint32Field   uint32            `avro:"uint32_field"`
+		Uint64Field   uint64            `avro:"uint64_field"`
+		Float32Field  float32           `avro:"float32_field"`
+		Float64Field  float64           `avro:"float64_field"`
+		BoolField     bool              `avro:"bool_field"`
+		BytesField    []byte            `avro:"bytes_field"`
+		TimeField     time.Time         `avro:"time_field"`
+		StringSlice   []string          `avro:"string_slice"`
+		IntSlice      []int             `avro:"int_slice"`
+		StringMap     map[string]string `avro:"string_map"`
+		IntMap        map[string]int    `avro:"int_map"`
+		IntPointer    *int              `avro:"int_pointer"`
+		StringPointer *string           `avro:"string_pointer"`
 	}
 
 	type nestedStruct struct {
@@ -81,30 +84,31 @@ func TestFieldToSchema(t *testing.T) {
 		name      string
 		fieldName string
 		wantType  avro.Type
-		wantErr   bool
 	}{
-		{"StringField", "StringField", "string", false},
-		{"IntField", "IntField", "long", false},
-		{"Int8Field", "Int8Field", "int", false},
-		{"Int16Field", "Int16Field", "int", false},
-		{"Int32Field", "Int32Field", "int", false},
-		{"Int64Field", "Int64Field", "long", false},
-		{"UintField", "UintField", "fixed", false},
-		{"Uint8Field", "Uint8Field", "int", false},
-		{"Uint16Field", "Uint16Field", "int", false},
-		{"Uint32Field", "Uint32Field", "long", false},
-		{"Uint64Field", "Uint64Field", "fixed", false},
-		{"Float32Field", "Float32Field", "float", false},
-		{"Float64Field", "Float64Field", "double", false},
-		{"BoolField", "BoolField", "boolean", false},
-		{"BytesField", "BytesField", "bytes", false},
-		{"TimeField", "TimeField", "long", false},
-		{"StringSlice", "StringSlice", "array", false},
-		{"IntSlice", "IntSlice", "array", false},
-		{"StringMap", "StringMap", "map", false},
-		{"IntMap", "IntMap", "map", false},
-		{"NestedStructField", "NestedStructField", "record", false},
-		{"NestedSlice", "NestedSlice", "array", false},
+		{"StringField", "StringField", "string"},
+		{"IntField", "IntField", "long"},
+		{"Int8Field", "Int8Field", "int"},
+		{"Int16Field", "Int16Field", "int"},
+		{"Int32Field", "Int32Field", "int"},
+		{"Int64Field", "Int64Field", "long"},
+		{"UintField", "UintField", "fixed"},
+		{"Uint8Field", "Uint8Field", "int"},
+		{"Uint16Field", "Uint16Field", "int"},
+		{"Uint32Field", "Uint32Field", "long"},
+		{"Uint64Field", "Uint64Field", "fixed"},
+		{"Float32Field", "Float32Field", "float"},
+		{"Float64Field", "Float64Field", "double"},
+		{"BoolField", "BoolField", "boolean"},
+		{"BytesField", "BytesField", "bytes"},
+		{"TimeField", "TimeField", "long"},
+		{"StringSlice", "StringSlice", "array"},
+		{"IntSlice", "IntSlice", "array"},
+		{"StringMap", "StringMap", "map"},
+		{"IntMap", "IntMap", "map"},
+		{"IntPointer", "IntPointer", "union"},
+		{"StringPointer", "StringPointer", "union"},
+		{"NestedStructField", "NestedStructField", "record"},
+		{"NestedSlice", "NestedSlice", "array"},
 	}
 
 	testType := reflect.TypeOf(testStruct{})
@@ -120,10 +124,7 @@ func TestFieldToSchema(t *testing.T) {
 			}
 
 			schema, err := fieldToSchema(f)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("fieldToSchema() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			require.NoError(t, err, "fieldToSchema() should not return error for %s", tt.name)
 
 			if err == nil {
 				schemaType := schema.Type()
@@ -166,8 +167,10 @@ func TestFieldToSchema(t *testing.T) {
 
 func TestStructToSchema(t *testing.T) {
 	type SimpleStruct struct {
-		Name string `avro:"name"`
-		Age  int    `avro:"age"`
+		Name     string  `avro:"name"`
+		Age      int     `avro:"age"`
+		Children *int    `avro:"children"`
+		Alias    *string `avro:"alias"`
 	}
 
 	type StructWithoutTags struct {
@@ -192,8 +195,8 @@ func TestStructToSchema(t *testing.T) {
 		wantFields int
 		wantErr    bool
 	}{
-		{"SimpleStruct", "test", SimpleStruct{}, 2, false},
-		{"SimpleStructPointer", "test", &SimpleStruct{}, 2, false},
+		{"SimpleStruct", "test", SimpleStruct{}, 4, false},
+		{"SimpleStructPointer", "test", &SimpleStruct{}, 4, false},
 		{"StructWithoutTags", "test", StructWithoutTags{}, 0, false},
 		{"StructWithNestedStruct", "test", StructWithNestedStruct{}, 2, false},
 		{"StructWithSlice", "test", StructWithSlice{}, 2, false},
@@ -239,63 +242,72 @@ func TestStructToSchema(t *testing.T) {
 
 func TestEncodeDecodeUsingSchema(t *testing.T) {
 	type ComplexMetric struct {
-		Name         string            `avro:"name"`
-		IntField     int               `avro:"int_field"`
-		Int8Field    int8              `avro:"int8_field"`
-		Int16Field   int16             `avro:"int16_field"`
-		Int32Field   int32             `avro:"int32_field"`
-		Int64Field   int64             `avro:"int64_field"`
-		Uint8Field   uint8             `avro:"uint8_field"`
-		Uint16Field  uint16            `avro:"uint16_field"`
-		Uint32Field  uint32            `avro:"uint32_field"`
-		Uint64Field  uint64            `avro:"uint64_field"`
-		BytesField   []byte            `avro:"bytes_field"`
-		Float32Field float32           `avro:"float32_field"`
-		Float64Field float64           `avro:"float_field"`
-		BoolField    bool              `avro:"bool_field"`
-		TimeField    time.Time         `avro:"time_field"`
-		StringSlice  []string          `avro:"string_slice"`
-		IntSlice     []int             `avro:"int_slice"`
-		Int8Slice    []int8            `avro:"int8_slice"`
-		Int16Slice   []int16           `avro:"int16_slice"`
-		Int32Slice   []int32           `avro:"int32_slice"`
-		Int64Slice   []int64           `avro:"int64_slice"`
-		Uint8Slice   []uint8           `avro:"uint8_slice"`
-		Uint16Slice  []uint16          `avro:"uint16_slice"`
-		Uint32Slice  []uint32          `avro:"uint32_slice"`
-		Float32Slice []float32         `avro:"float32_slice"`
-		Float64Slice []float64         `avro:"float64_slice"`
-		StringMap    map[string]string `avro:"string_map"`
+		Name           string            `avro:"name"`
+		IntField       int               `avro:"int_field"`
+		Int8Field      int8              `avro:"int8_field"`
+		Int16Field     int16             `avro:"int16_field"`
+		Int32Field     int32             `avro:"int32_field"`
+		Int64Field     int64             `avro:"int64_field"`
+		Uint8Field     uint8             `avro:"uint8_field"`
+		Uint16Field    uint16            `avro:"uint16_field"`
+		Uint32Field    uint32            `avro:"uint32_field"`
+		Uint64Field    uint64            `avro:"uint64_field"`
+		BytesField     []byte            `avro:"bytes_field"`
+		Float32Field   float32           `avro:"float32_field"`
+		Float64Field   float64           `avro:"float_field"`
+		BoolField      bool              `avro:"bool_field"`
+		TimeField      time.Time         `avro:"time_field"`
+		StringSlice    []string          `avro:"string_slice"`
+		IntSlice       []int             `avro:"int_slice"`
+		Int8Slice      []int8            `avro:"int8_slice"`
+		Int16Slice     []int16           `avro:"int16_slice"`
+		Int32Slice     []int32           `avro:"int32_slice"`
+		Int64Slice     []int64           `avro:"int64_slice"`
+		Uint8Slice     []uint8           `avro:"uint8_slice"`
+		Uint16Slice    []uint16          `avro:"uint16_slice"`
+		Uint32Slice    []uint32          `avro:"uint32_slice"`
+		Float32Slice   []float32         `avro:"float32_slice"`
+		Float64Slice   []float64         `avro:"float64_slice"`
+		StringMap      map[string]string `avro:"string_map"`
+		IntPointer     *int              `avro:"int_pointer"`
+		StringPointer  *string           `avro:"string_pointer"`
+		EmptyIntPtr    *int              `avro:"empty_int_ptr"`
+		EmptyStringPtr *string           `avro:"empty_string_ptr"`
 	}
 
+	someInt := 42
+	someString := "fight club"
+
 	testData := ComplexMetric{
-		Name:         "Test",
-		IntField:     42,
-		Int8Field:    math.MaxInt8,
-		Int16Field:   math.MaxInt16,
-		Int32Field:   math.MaxInt32,
-		Int64Field:   math.MaxInt64,
-		Uint8Field:   math.MaxUint8,
-		Uint16Field:  math.MaxUint16,
-		Uint32Field:  math.MaxUint32,
-		Uint64Field:  math.MaxUint64,
-		BytesField:   []byte("test"),
-		Float32Field: math.MaxFloat32,
-		Float64Field: math.MaxFloat64,
-		BoolField:    true,
-		TimeField:    time.Now(),
-		StringSlice:  []string{"a", "b", "c"},
-		IntSlice:     []int{1, 2, 3, math.MaxInt},
-		Int8Slice:    []int8{1, 2, 3, math.MaxInt8},
-		Int16Slice:   []int16{1, 2, 3, math.MaxInt16},
-		Int32Slice:   []int32{1, 2, 3, math.MaxInt32},
-		Int64Slice:   []int64{1, 2, 3, math.MaxInt64},
-		Uint8Slice:   []uint8{1, 2, 3, math.MaxUint8},
-		Uint16Slice:  []uint16{1, 2, 3, math.MaxUint16},
-		Uint32Slice:  []uint32{1, 2, 3, math.MaxUint32},
-		Float32Slice: []float32{1.1, 2.2, 3.3, float32(math.MaxFloat32)},
-		Float64Slice: []float64{1.1, 2.2, 3.3, math.MaxFloat64},
-		StringMap:    map[string]string{"key1": "value1", "key2": "value2"},
+		Name:          "Test",
+		IntField:      42,
+		Int8Field:     math.MaxInt8,
+		Int16Field:    math.MaxInt16,
+		Int32Field:    math.MaxInt32,
+		Int64Field:    math.MaxInt64,
+		Uint8Field:    math.MaxUint8,
+		Uint16Field:   math.MaxUint16,
+		Uint32Field:   math.MaxUint32,
+		Uint64Field:   math.MaxUint64,
+		BytesField:    []byte("test"),
+		Float32Field:  math.MaxFloat32,
+		Float64Field:  math.MaxFloat64,
+		BoolField:     true,
+		TimeField:     time.Now(),
+		StringSlice:   []string{"a", "b", "c"},
+		IntSlice:      []int{1, 2, 3, math.MaxInt},
+		Int8Slice:     []int8{1, 2, 3, math.MaxInt8},
+		Int16Slice:    []int16{1, 2, 3, math.MaxInt16},
+		Int32Slice:    []int32{1, 2, 3, math.MaxInt32},
+		Int64Slice:    []int64{1, 2, 3, math.MaxInt64},
+		Uint8Slice:    []uint8{1, 2, 3, math.MaxUint8},
+		Uint16Slice:   []uint16{1, 2, 3, math.MaxUint16},
+		Uint32Slice:   []uint32{1, 2, 3, math.MaxUint32},
+		Float32Slice:  []float32{1.1, 2.2, 3.3, float32(math.MaxFloat32)},
+		Float64Slice:  []float64{1.1, 2.2, 3.3, math.MaxFloat64},
+		StringMap:     map[string]string{"key1": "value1", "key2": "value2"},
+		IntPointer:    &someInt,
+		StringPointer: &someString,
 	}
 	schema, err := structToSchema("test", testData)
 	if err != nil {
@@ -343,4 +355,8 @@ func TestEncodeDecodeUsingSchema(t *testing.T) {
 	require.Equal(t, testData.Float32Slice, decodedData.Float32Slice, "Float32Slice does not match")
 	require.Equal(t, testData.Float64Slice, decodedData.Float64Slice, "Float64Slice does not match")
 	require.Equal(t, testData.StringMap, decodedData.StringMap, "StringMap does not match")
+	require.Equal(t, testData.IntPointer, decodedData.IntPointer, "IntPointer does not match")
+	require.Equal(t, testData.StringPointer, decodedData.StringPointer, "StringPointer does not match")
+	require.Equal(t, testData.EmptyIntPtr, decodedData.EmptyIntPtr, "EmptyIntPtr does not match")
+	require.Equal(t, testData.EmptyStringPtr, decodedData.EmptyStringPtr, "EmptyStringPtr does not match")
 }
